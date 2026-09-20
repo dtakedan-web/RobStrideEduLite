@@ -253,6 +253,56 @@ bool RobStrideEduLite::setActiveReport(bool on) {
 }
 
 // ------------------------------------------------------------------
+// ミドル関数
+// ------------------------------------------------------------------
+bool RobStrideEduLite::requestFeedback(EL05Feedback &fb, uint32_t timeoutMs) {
+  // 中立指令 (kp=kd=tff=0) で応答を誘発。速度/位置/電流モード中でも無害。
+  if (!setMIT(0, 0, 0, 0, 0)) return false;
+  fb = readFeedback(timeoutMs);
+  return fb.valid;
+}
+
+bool RobStrideEduLite::getPosition(float &outRad, uint32_t timeoutMs) {
+  EL05Feedback fb;
+  if (!requestFeedback(fb, timeoutMs)) return false;
+  outRad = fb.positionRad;
+  return true;
+}
+
+bool RobStrideEduLite::getVelocity(float &outRadS, uint32_t timeoutMs) {
+  EL05Feedback fb;
+  if (!requestFeedback(fb, timeoutMs)) return false;
+  outRadS = fb.velocityRps;
+  return true;
+}
+
+bool RobStrideEduLite::getTorque(float &outNm, uint32_t timeoutMs) {
+  EL05Feedback fb;
+  if (!requestFeedback(fb, timeoutMs)) return false;
+  outNm = fb.torqueNm;
+  return true;
+}
+
+bool RobStrideEduLite::getTemperature(float &outC, uint32_t timeoutMs) {
+  EL05Feedback fb;
+  if (!requestFeedback(fb, timeoutMs)) return false;
+  outC = fb.tempC;
+  return true;
+}
+
+bool RobStrideEduLite::getBusVoltage(float &outV, uint32_t timeoutMs) {
+  return readParamFloat(EL05_IDX_VBUS, outV, timeoutMs);
+}
+
+bool RobStrideEduLite::setTorqueLimit(float nm) {
+  return writeParamFloat(EL05_IDX_LIMIT_TORQUE, constrainFloat(nm, 0.0f, EL05_T_MAX));
+}
+
+bool RobStrideEduLite::clearFault() {
+  return disable(true);
+}
+
+// ------------------------------------------------------------------
 // フィードバック受信 (通信タイプ2 / 24 の応答)
 // ID: bit28~24=タイプ, bit8~15=モーターID, bit16~21=故障, bit22~23=モード状態
 // Data: Byte0~1 位置, Byte2~3 速度, Byte4~5 トルク, Byte6~7 温度(℃×10) ※ビッグエンディアン

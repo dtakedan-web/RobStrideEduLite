@@ -27,6 +27,16 @@ readParam	KEYWORD2
 readParamFloat	KEYWORD2
 readFeedback	KEYWORD2
 setActiveReport	KEYWORD2
+getPosition	KEYWORD2
+getVelocity	KEYWORD2
+getTorque	KEYWORD2
+getTemperature	KEYWORD2
+getBusVoltage	KEYWORD2
+setTorqueLimit	KEYWORD2
+clearFault	KEYWORD2
+scanBus	KEYWORD2
+getStatus	KEYWORD2
+getAlerts	KEYWORD2
 EL05_MODE_MIT	LITERAL1
 EL05_MODE_PP	LITERAL1
 EL05_MODE_VELOCITY	LITERAL1

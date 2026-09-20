@@ -138,6 +138,21 @@ public:
   // 能動レポート (10ms 周期の自動フィードバック) ON/OFF
   bool setActiveReport(bool on);
 
+  // ---- ミドル関数 (個別取得の簡易版) ----
+  // 内部で「中立MIT指令→フィードバック受信」を行い、該当値だけ返す。
+  // いずれも取得失敗時は false を返し、out は変更しない。
+  // ※ MIT モード以外 (速度/位置/電流) でも中立指令は無害 (kp=kd=tff=0)
+  bool getPosition(float &outRad, uint32_t timeoutMs = 50);
+  bool getVelocity(float &outRadS, uint32_t timeoutMs = 50);
+  bool getTorque(float &outNm, uint32_t timeoutMs = 50);
+  bool getTemperature(float &outC, uint32_t timeoutMs = 50);
+  // バス電圧はパラメータ読み出し (0x701C) で取得
+  bool getBusVoltage(float &outV, uint32_t timeoutMs = 100);
+
+  // ---- 制限・整備 ----
+  bool setTorqueLimit(float nm);   // トルク制限 (0~6Nm)
+  bool clearFault();               // 故障クリア (disable(true) の明示版)
+
   // ---- ユーティリティ ----
   void setMotorId(uint8_t id) { _motorId = id; }
   uint8_t motorId() const { return _motorId; }
@@ -163,6 +178,9 @@ private:
                    const uint8_t *payload, uint8_t len = 8);
   bool sendEmpty(uint8_t type);
   bool writeParamRaw(uint16_t index, const uint8_t *value4);
+
+  // 中立MIT指令(kp=kd=tff=0)を送ってフィードバックを1つ取得する内部ヘルパー
+  bool requestFeedback(EL05Feedback &fb, uint32_t timeoutMs);
 
   static uint16_t floatToUint(float x, float xMin, float xMax);
   static float    uintToFloat(uint16_t x, float xMin, float xMax);

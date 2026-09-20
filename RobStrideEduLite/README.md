@@ -67,6 +67,28 @@ void loop() {
 | `saveParameters()` | パラメータを不揮発保存 |
 | `setCanId(newId)` | CAN_ID 変更 |
 
+### ミドル関数 (v0.2.0〜)
+
+個別に値を取りたいときの簡易版。取得失敗時は `false` を返します。
+
+| メソッド | 内容 |
+|---|---|
+| `getPosition(rad)` | 現在位置 [rad] |
+| `getVelocity(radS)` | 現在速度 [rad/s] |
+| `getTorque(nm)` | 現在トルク [Nm] |
+| `getTemperature(c)` | 現在温度 [℃] |
+| `getBusVoltage(v)` | バス電圧 [V] |
+| `setTorqueLimit(nm)` | トルク制限 (0〜6 Nm) |
+| `clearFault()` | 故障クリア |
+
+### 診断 (v0.1.1〜)
+
+| メソッド | 内容 |
+|---|---|
+| `scanBus(foundIds, max, timeoutMs)` | 全 ID をスキャンして接続中のモーターを検出 |
+| `getStatus(info)` | TWAI ステータス (TEC/REC/エラー数) |
+| `getAlerts(timeoutMs)` | アラート (TX失敗/バスエラー等) |
+
 ## レンジ (EL05)
 
 | 量 | 範囲 |
@@ -80,9 +102,12 @@ void loop() {
 
 ## 例スケッチ
 
-1. **01_CheckConnection** — 最初に必ず実行。通信・フィードバック・バス電圧の確認のみ (軸は動きません)
-2. **02_MIT_SinePosition** — MIT モードで正弦波位置制御。シリアルで kp/kd/振幅を変更可能
-3. **03_VelocityMode** — 速度モード。シリアルで速度・加速度を変更可能
+1. **00_Diagnose** — 診断スキャン。接続中モーターの ID 検出とバス状態表示 (配線確認用)
+2. **01_CheckConnection** — 最初に必ず実行。通信・フィードバック・バス電圧の確認のみ (軸は動きません)
+3. **02_MIT_SinePosition** — MIT モードで正弦波位置制御。シリアルで kp/kd/振幅を変更可能
+4. **03_VelocityMode** — 速度モード。シリアルで速度・加速度を変更可能
+5. **04_PositionMode** — 位置モード (CSP / PP)。目標位置への移動と速度制限
+6. **05_MotorSetup** — 設定ユーティリティ。CAN_ID 変更・原点設定・パラメータ保存を対話式で実行
 
 ## 安全上の注意
 
