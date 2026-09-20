@@ -15,14 +15,16 @@
  *   i        : モーター情報を表示 (位置/温度/バス電圧/run_mode)
  *   n<ID>    : CAN_ID を変更 (1~127)     例) n5
  *   z        : 現在位置を機械原点(0)に設定 (2度押し確認)
- *   w        : パラメータを不揮発メモリに保存
  *   s        : モーター停止
  *   r        : バスを再スキャンしてモーターを選び直す
  *
  * 重要:
- *   - CAN_ID 変更は即時有効だが、永続化には w (保存) が必要
+ *   - CAN_ID 変更と機械原点設定は、どちらも実行した時点で不揮発メモリに
+ *     保存され、電源を切っても保持される (実測で確認済み)
  *   - ID 変更後はこのスケッチが自動で新しい ID を追跡する (再スキャン不要)
  *   - ゼロ点設定はモーターが動かないことを確認してから実行
+ *   - なお制御パラメータ (Kp/制限値など, タイプ18書き込み) を永続化する場合の
+ *     保存コマンド (タイプ22) は本スケッチでは扱わない。必要なら README 参照
  */
 
 #include <RobStrideEduLite.h>
@@ -80,7 +82,7 @@ void showInfo() {
 }
 
 void printHelp() {
-  Serial.println(F("コマンド: i=情報 n<ID>=ID変更 z=原点設定 w=保存 s=停止 r=再スキャン"));
+  Serial.println(F("コマンド: i=情報 n<ID>=ID変更 z=原点設定 s=停止 r=再スキャン"));
 }
 
 // ---------------------------------------------------------------
@@ -149,8 +151,8 @@ void loop() {
       }
       Serial.printf("CAN_ID を %u -> %d に変更します...\n", motor.motorId(), newId);
       if (motor.setCanId((uint8_t)newId)) {
-        Serial.println(F("変更しました (即時有効)。このスケッチは新しいIDを自動追跡します。"));
-        Serial.println(F("※ 永続化するには 'w' で保存してください。"));
+        Serial.println(F("変更しました (不揮発メモリに保存され、電源を切っても保持されます)。"));
+        Serial.println(F("このスケッチは新しいIDを自動追跡します。"));
         showInfo();
       } else {
         Serial.println(F("変更に失敗しました"));
@@ -168,17 +170,15 @@ void loop() {
           if (Serial.available() && (char)Serial.read() == 'z') { confirmed = true; break; }
         }
         if (confirmed) {
-          if (motor.setZeroPosition()) Serial.println(F("原点を設定しました"));
-          else Serial.println(F("原点設定に失敗しました"));
+          if (motor.setZeroPosition()) {
+            Serial.println(F("原点を設定しました (不揮発メモリに保存されます)。"));
+          } else {
+            Serial.println(F("原点設定に失敗しました"));
+          }
         } else {
           Serial.println(F("キャンセルしました"));
         }
       }
-      break;
-
-    case 'w':
-      if (motor.saveParameters()) Serial.println(F("パラメータを保存しました (不揮発)"));
-      else Serial.println(F("保存に失敗しました"));
       break;
 
     case 's':
