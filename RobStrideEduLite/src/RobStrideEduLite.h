@@ -93,6 +93,29 @@ struct EL05Feedback {
   float    tempC       = 0.0f;   // ℃
 };
 
+// ---- 故障フィードバック構造体 (通信タイプ21 = 0x15) ----
+// モーターから自発的に送られる詳細な故障・警告情報
+struct EL05Fault {
+  bool     valid      = false;
+  uint8_t  motorId    = 0;
+  uint32_t faultValue = 0;   // Byte0~3: 故障ビット (0=正常)
+  uint32_t warnValue  = 0;   // Byte4~7: 警告ビット
+  bool     hasFault   = false;
+  bool     hasWarning = false;
+  // 故障ビット内訳 (faultValue)
+  bool overtemperature() const { return faultValue & (1UL << 0); }  // モーター過温度 (既定135℃)
+  bool driverChip()      const { return faultValue & (1UL << 1); }  // ドライバチップ故障
+  bool undervoltage()    const { return faultValue & (1UL << 2); }  // 低電圧
+  bool overvoltage()     const { return faultValue & (1UL << 3); }  // 過電圧
+  bool overcurrentB()    const { return faultValue & (1UL << 4); }  // B相電流過電流
+  bool overcurrentC()    const { return faultValue & (1UL << 5); }  // C相電流過電流
+  bool encUncalibrated() const { return faultValue & (1UL << 7); }  // エンコーダ未キャリブ
+  bool hwIdFault()       const { return faultValue & (1UL << 8); }  // ハード識別故障
+  bool posInitFault()    const { return faultValue & (1UL << 9); }  // 位置初期化故障
+  bool stallOverload()   const { return faultValue & (1UL << 14); } // ロック過負荷保護
+  bool overcurrentA()    const { return faultValue & (1UL << 16); } // A相電流過電流
+};
+
 class RobStrideEduLite {
 public:
   // motorId: モーターの CAN_ID (出荷時 1 または 127)。hostId: ESP32 側の仮想ホストID
@@ -152,6 +175,16 @@ public:
   // ---- 制限・整備 ----
   bool setTorqueLimit(float nm);   // トルク制限 (0~6Nm)
   bool clearFault();               // 故障クリア (disable(true) の明示版)
+
+  // ---- デバイス情報 (v0.2.4〜) ----
+  // ファームウェアのバージョン番号を読み出す (タイプ4 + Byte0=0x00, Byte1=0xC4)。
+  // 取得できたら version に値(例 "1.2.3.4")が入り true を返す。
+  bool readVersion(char *version, size_t len, uint32_t timeoutMs = 100);
+
+  // ---- 故障フィードバック (通信タイプ21 = 0x15) ----
+  // モーターから自発的に送られる詳細な故障・警告情報を読み取る。
+  // 受信があれば true を返し out に格納。タイムアウトなら valid=false。
+  bool readFault(EL05Fault &out, uint32_t timeoutMs = 50);
 
   // ---- ユーティリティ ----
   void setMotorId(uint8_t id) { _motorId = id; }

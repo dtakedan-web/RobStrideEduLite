@@ -303,6 +303,61 @@ bool RobStrideEduLite::clearFault() {
 }
 
 // ------------------------------------------------------------------
+// バージョン番号読み出し (タイプ4 + Byte0=0x00, Byte1=0xC4)
+// 応答: タイプ2 で Byte3~6 にバージョン番号 (上位から)
+// ------------------------------------------------------------------
+bool RobStrideEduLite::readVersion(char *version, size_t len, uint32_t timeoutMs) {
+  if (!_begun || !version || len < 2) return false;
+  uint8_t data[8] = {0};
+  data[0] = 0x00;
+  data[1] = 0xC4;
+  if (!sendFrame(EL05_TYPE_DISABLE, _hostId, data, 8)) return false;
+
+  uint32_t start = millis();
+  while (millis() - start < timeoutMs) {
+    twai_message_t rx;
+    if (twai_receive(&rx, pdMS_TO_TICKS(5)) != ESP_OK || !rx.extd) continue;
+    if (rx.data_length_code < 8) continue;
+    uint8_t type = (uint8_t)((rx.identifier >> 24) & 0x1F);
+    uint8_t from = (uint8_t)((rx.identifier >> 8) & 0xFF);
+    if (type != EL05_TYPE_FEEDBACK || from != _motorId) continue;
+    if (rx.data[0] != 0x00 || rx.data[1] != 0xC4 || rx.data[2] != 0x56) continue;
+    // Byte3~6 がバージョン番号 (上位から)
+    snprintf(version, len, "%u.%u.%u.%u", rx.data[3], rx.data[4], rx.data[5], rx.data[6]);
+    return true;
+  }
+  return false;
+}
+
+// ------------------------------------------------------------------
+// 故障フィードバック (通信タイプ21 = 0x15)
+// ID: bit28~24=0x15, bit15~8=モーターCAN_ID, bit7~0=ホストCAN_ID
+// Data: Byte0~3=故障値, Byte4~7=警告値 (ともにリトルエンディアン想定)
+// ------------------------------------------------------------------
+bool RobStrideEduLite::readFault(EL05Fault &out, uint32_t timeoutMs) {
+  out = EL05Fault();
+  if (!_begun) return false;
+  uint32_t start = millis();
+  while (millis() - start < timeoutMs) {
+    twai_message_t rx;
+    if (twai_receive(&rx, pdMS_TO_TICKS(5)) != ESP_OK || !rx.extd) continue;
+    if (rx.data_length_code < 8) continue;
+    uint8_t type = (uint8_t)((rx.identifier >> 24) & 0x1F);
+    if (type != EL05_TYPE_FAULT_FEEDBACK) continue;
+    uint8_t from = (uint8_t)((rx.identifier >> 8) & 0xFF);
+    if (from != _motorId) continue;
+    out.valid      = true;
+    out.motorId    = from;
+    memcpy(&out.faultValue, &rx.data[0], 4);
+    memcpy(&out.warnValue,  &rx.data[4], 4);
+    out.hasFault   = (out.faultValue != 0);
+    out.hasWarning = (out.warnValue  != 0);
+    return true;
+  }
+  return false;
+}
+
+// ------------------------------------------------------------------
 // フィードバック受信 (通信タイプ2 / 24 の応答)
 // ID: bit28~24=タイプ, bit8~15=モーターID, bit16~21=故障, bit22~23=モード状態
 // Data: Byte0~1 位置, Byte2~3 速度, Byte4~5 トルク, Byte6~7 温度(℃×10) ※ビッグエンディアン

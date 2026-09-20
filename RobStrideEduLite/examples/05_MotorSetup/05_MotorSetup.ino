@@ -12,9 +12,10 @@
  *      複数見つかる          → 手動で ID を選択
  *
  * 操作モードのコマンド (115200bps, 改行付き):
- *   i        : モーター情報を表示 (位置/温度/バス電圧/run_mode)
+ *   i        : モーター情報を表示 (位置/温度/バス電圧/run_mode/バージョン)
  *   n<ID>    : CAN_ID を変更 (1~127)     例) n5
  *   z        : 現在位置を機械原点(0)に設定 (2度押し確認)
+ *   f        : 故障・警告情報を読み出す
  *   s        : モーター停止
  *   r        : バスを再スキャンしてモーターを選び直す
  *
@@ -69,6 +70,7 @@ void showInfo() {
   if (!motorReady) { Serial.println(F("先にモーターを検出してください ('r' で再スキャン)")); return; }
   float pos, temp, vbus;
   uint8_t rm[4];
+  char ver[24];
   Serial.println(F("--- モーター情報 ---"));
   Serial.printf("CAN_ID: %u\n", motor.motorId());
   if (motor.getPosition(pos))        Serial.printf("位置:   %+.3f rad\n", pos);
@@ -78,11 +80,48 @@ void showInfo() {
   if (motor.readParam(EL05_IDX_RUN_MODE, rm)) {
     Serial.printf("run_mode: %u (0=MIT 1=PP 2=速度 3=電流 5=CSP)\n", rm[0]);
   }
+  if (motor.readVersion(ver, sizeof(ver))) {
+    Serial.printf("ファーム: %s\n", ver);
+  }
   Serial.println(F("--------------------"));
 }
 
+// 故障・警告情報の表示
+void showFault() {
+  if (!motorReady) { Serial.println(F("先にモーターを検出してください")); return; }
+  EL05Fault flt;
+  // 故障フィードバックは自発送信。短めにポーリングして拾う
+  Serial.println(F("故障情報を待機中 (500ms)..."));
+  if (motor.readFault(flt, 500) && flt.valid) {
+    Serial.printf("CAN_ID %u の故障情報:\n", flt.motorId);
+    if (!flt.hasFault && !flt.hasWarning) {
+      Serial.println(F("  正常 (故障・警告なし)"));
+      return;
+    }
+    if (flt.hasFault) {
+      Serial.printf("  故障値: 0x%08lX\n", (unsigned long)flt.faultValue);
+      if (flt.overtemperature())  Serial.println(F("    - モーター過温度"));
+      if (flt.driverChip())       Serial.println(F("    - ドライバチップ故障"));
+      if (flt.undervoltage())     Serial.println(F("    - 低電圧"));
+      if (flt.overvoltage())      Serial.println(F("    - 過電圧"));
+      if (flt.overcurrentA())     Serial.println(F("    - A相過電流"));
+      if (flt.overcurrentB())     Serial.println(F("    - B相過電流"));
+      if (flt.overcurrentC())     Serial.println(F("    - C相過電流"));
+      if (flt.encUncalibrated())  Serial.println(F("    - エンコーダ未キャリブ"));
+      if (flt.hwIdFault())        Serial.println(F("    - ハード識別故障"));
+      if (flt.posInitFault())     Serial.println(F("    - 位置初期化故障"));
+      if (flt.stallOverload())    Serial.println(F("    - ロック過負荷保護"));
+    }
+    if (flt.hasWarning) {
+      Serial.printf("  警告値: 0x%08lX\n", (unsigned long)flt.warnValue);
+    }
+  } else {
+    Serial.println(F("  故障フィードバックを受信できませんでした (故障が無い場合は送られません)"));
+  }
+}
+
 void printHelp() {
-  Serial.println(F("コマンド: i=情報 n<ID>=ID変更 z=原点設定 s=停止 r=再スキャン"));
+  Serial.println(F("コマンド: i=情報 n<ID>=ID変更 z=原点設定 f=故障情報 s=停止 r=再スキャン"));
 }
 
 // ---------------------------------------------------------------
@@ -141,6 +180,10 @@ void loop() {
   switch (c) {
     case 'i':
       showInfo();
+      break;
+
+    case 'f':
+      showFault();
       break;
 
     case 'n': {
