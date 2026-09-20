@@ -38,9 +38,9 @@ bool motorReady = false;     // モーターが選択済みか
 // 戻り値: true = 1台に確定, false = 未確定
 // ---------------------------------------------------------------
 bool scanAndSelect() {
-  Serial.println(F("バスをスキャン中 (約10秒)..."));
+  Serial.println(F("バスをスキャン中 (約2〜3秒)..."));
   uint8_t found[16];
-  uint8_t n = motor.scanBus(found, 16, 15);
+  uint8_t n = motor.scanBus(found, 16, 5);   // 各ID 5ms 待機 (2周で約3秒)
 
   if (n == 0) {
     Serial.println(F("モーターが見つかりませんでした。配線と48V電源を確認し、'r' で再スキャンしてください。"));

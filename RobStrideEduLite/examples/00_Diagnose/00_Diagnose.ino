@@ -64,9 +64,9 @@ void setup() {
   }
   Serial.println(F("TWAI 初期化 OK"));
 
-  Serial.println(F("ID 1..127 をスキャン中 (約10秒)..."));
+  Serial.println(F("ID 1..127 をスキャン中 (約2〜3秒)..."));
   uint8_t found[16];
-  uint8_t n = motor.scanBus(found, 16, 15);
+  uint8_t n = motor.scanBus(found, 16, 5);   // 各ID 5ms 待機 (2周で約3秒)
 
   Serial.println(F("--- 結果 ---"));
   if (n == 0) {

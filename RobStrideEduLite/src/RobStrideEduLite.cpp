@@ -316,8 +316,8 @@ uint8_t RobStrideEduLite::scanBus(uint8_t *foundIds, uint8_t maxFound,
   if (!_begun) return 0;
   uint8_t zeros[8] = {0};
 
-  // 3 周リトライ: 取りこぼしで見逃したモーターを次の周で拾う
-  for (uint8_t round = 0; round < 3 && count < maxFound; round++) {
+  // 2 周リトライ (物理層の不具合対策として多周していた名残。現在は安定しているため最小限に)
+  for (uint8_t round = 0; round < 2 && count < maxFound; round++) {
     for (uint16_t id = 1; id <= 127 && count < maxFound; id++) {
       // 前 ID の応答残りを捨ててキューを空にする
       twai_message_t dump;
