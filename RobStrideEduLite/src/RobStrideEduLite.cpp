@@ -170,6 +170,11 @@ bool RobStrideEduLite::setMIT(float pos, float vel, float kp, float kd, float tf
   return sendFrame(EL05_TYPE_MIT_CONTROL, t, data, 8);
 }
 
+// 角度を degree、速度を rpm で指定する MIT 版
+bool RobStrideEduLite::setMIT_deg(float posDeg, float velRpm, float kp, float kd, float tff) {
+  return setMIT(posDeg * EL05_DEG2RAD, velRpm * EL05_RPM2RPS, kp, kd, tff);
+}
+
 // ------------------------------------------------------------------
 // パラメータ書き込み: 通信タイプ18 (揮発性。保存には通信タイプ22)
 // Byte0~1: index (リトルエンディアン), Byte2~3: 0, Byte4~7: 値 (リトルエンディアン)
@@ -252,12 +257,24 @@ bool RobStrideEduLite::setVelocity(float radS) {
   return writeParamFloat(EL05_IDX_SPD_REF, constrainFloat(radS, EL05_V_MIN, EL05_V_MAX));
 }
 
+bool RobStrideEduLite::setVelocity_rpm(float rpm) {
+  return setVelocity(rpm * EL05_RPM2RPS);
+}
+
 bool RobStrideEduLite::setPositionCSP(float rad) {
   return writeParamFloat(EL05_IDX_LOC_REF, constrainFloat(rad, EL05_P_MIN, EL05_P_MAX));
 }
 
+bool RobStrideEduLite::setPositionCSP_deg(float deg) {
+  return setPositionCSP(deg * EL05_DEG2RAD);
+}
+
 bool RobStrideEduLite::setPositionPP(float rad) {
   return writeParamFloat(EL05_IDX_LOC_REF, constrainFloat(rad, EL05_P_MIN, EL05_P_MAX));
+}
+
+bool RobStrideEduLite::setPositionPP_deg(float deg) {
+  return setPositionPP(deg * EL05_DEG2RAD);
 }
 
 bool RobStrideEduLite::setVelocityAccel(float radS2) {
@@ -269,8 +286,17 @@ bool RobStrideEduLite::setPPProfile(float velMax, float acc) {
   return writeParamFloat(EL05_IDX_ACC_SET, acc);
 }
 
+bool RobStrideEduLite::setPPProfile_rpm(float velMaxRpm, float accRpmS) {
+  // 速度は rpm→rad/s、加速度は rpm/s→rad/s^2 (同じ換算係数)
+  return setPPProfile(velMaxRpm * EL05_RPM2RPS, accRpmS * EL05_RPM2RPS);
+}
+
 bool RobStrideEduLite::setCSPSpeedLimit(float radS) {
   return writeParamFloat(EL05_IDX_LIMIT_SPD, constrainFloat(radS, 0.0f, EL05_V_MAX));
+}
+
+bool RobStrideEduLite::setCSPSpeedLimit_rpm(float rpm) {
+  return setCSPSpeedLimit(rpm * EL05_RPM2RPS);
 }
 
 bool RobStrideEduLite::setCurrentLimit(float amp) {
@@ -306,6 +332,20 @@ bool RobStrideEduLite::getVelocity(float &outRadS, uint32_t timeoutMs) {
   EL05Feedback fb;
   if (!requestFeedback(fb, timeoutMs)) return false;
   outRadS = fb.velocityRps;
+  return true;
+}
+
+bool RobStrideEduLite::getPosition_deg(float &outDeg, uint32_t timeoutMs) {
+  float rad;
+  if (!getPosition(rad, timeoutMs)) return false;
+  outDeg = rad * EL05_RAD2DEG;
+  return true;
+}
+
+bool RobStrideEduLite::getVelocity_rpm(float &outRpm, uint32_t timeoutMs) {
+  float radS;
+  if (!getVelocity(radS, timeoutMs)) return false;
+  outRpm = radS * EL05_RPS2RPM;
   return true;
 }
 

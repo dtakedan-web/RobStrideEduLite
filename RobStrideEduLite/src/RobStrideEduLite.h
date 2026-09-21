@@ -32,6 +32,12 @@
 #define EL05_T_MAX   (  6.0f)
 #define EL05_IQ_MAX  ( 11.0f)    // 電流モード Iq 指令 [A] (-11~11A)
 
+// ---- 単位換算定数 ----
+#define EL05_RAD2DEG  (57.2957795f)   // 180/π
+#define EL05_DEG2RAD  ( 0.01745329f)  // π/180
+#define EL05_RPS2RPM  ( 9.54929659f)  // 60/(2π)  rad/s -> rpm
+#define EL05_RPM2RPS  ( 0.10471976f)  // 2π/60    rpm -> rad/s
+
 // ---- 通信タイプ (bit28~24) ----
 enum EL05CommType : uint8_t {
   EL05_TYPE_GET_DEVICE_ID   = 0x00,  // デバイスID取得
@@ -139,16 +145,23 @@ public:
   // ---- 運転制御(MIT)モード ----
   // t_ref = kd*(vel - v_actual) + kp*(pos - p_actual) + tff
   bool setMIT(float pos, float vel, float kp, float kd, float tff);
+  // 角度を degree、速度を rpm で指定する版 (内部で rad/rad/s に換算)
+  bool setMIT_deg(float posDeg, float velRpm, float kp, float kd, float tff);
 
   // ---- モード切替と各モードの指令 ----
   bool setRunMode(EL05RunMode mode);           // run_mode 書き込み (停止中に行うこと)
   bool setCurrent(float iqA);                  // 電流モード: Iq 指令
-  bool setVelocity(float radS);                // 速度モード: 速度指令
-  bool setPositionCSP(float rad);              // 位置モード(CSP): 角度指令
-  bool setPositionPP(float rad);               // 位置モード(PP): 角度指令
-  bool setVelocityAccel(float radS2);          // 速度モードの加速度
-  bool setPPProfile(float velMax, float acc);  // PP の速度/加速度
-  bool setCSPSpeedLimit(float radS);           // CSP の速度制限
+  bool setVelocity(float radS);                // 速度モード: 速度指令 [rad/s]
+  bool setVelocity_rpm(float rpm);             // 速度モード: 速度指令 [rpm]
+  bool setPositionCSP(float rad);              // 位置モード(CSP): 角度指令 [rad]
+  bool setPositionCSP_deg(float deg);          // 位置モード(CSP): 角度指令 [degree]
+  bool setPositionPP(float rad);               // 位置モード(PP): 角度指令 [rad]
+  bool setPositionPP_deg(float deg);           // 位置モード(PP): 角度指令 [degree]
+  bool setVelocityAccel(float radS2);          // 速度モードの加速度 [rad/s^2]
+  bool setPPProfile(float velMax, float acc);  // PP の速度[rad/s]/加速度[rad/s^2]
+  bool setPPProfile_rpm(float velMaxRpm, float accRpmS); // PP の速度[rpm]/加速度[rpm/s]
+  bool setCSPSpeedLimit(float radS);           // CSP の速度制限 [rad/s]
+  bool setCSPSpeedLimit_rpm(float rpm);        // CSP の速度制限 [rpm]
   bool setCurrentLimit(float amp);             // 速度/位置モードの電流制限
 
   // ---- パラメータ読み書き (通信タイプ17/18) ----
@@ -173,6 +186,9 @@ public:
   bool getVelocity(float &outRadS, uint32_t timeoutMs = 50);
   bool getTorque(float &outNm, uint32_t timeoutMs = 50);
   bool getTemperature(float &outC, uint32_t timeoutMs = 50);
+  // 角度を degree、速度を rpm で取得する版
+  bool getPosition_deg(float &outDeg, uint32_t timeoutMs = 50);
+  bool getVelocity_rpm(float &outRpm, uint32_t timeoutMs = 50);
   // バス電圧はパラメータ読み出し (0x701C) で取得
   bool getBusVoltage(float &outV, uint32_t timeoutMs = 100);
 

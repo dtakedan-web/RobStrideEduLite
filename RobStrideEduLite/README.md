@@ -97,6 +97,26 @@ void setup() {
 | `setTorqueLimit(nm)` | トルク制限 (0〜6 Nm) |
 | `clearFault()` | 故障クリア |
 
+### 単位変換ミドル関数 (v0.3.2〜)
+
+角度を **度(degree)**、速度を **rpm** で指定・取得できる版です。
+既存の rad 版と同じ動作で、内部で換算します。
+
+| メソッド | 内容 |
+|---|---|
+| `setMIT_deg(deg, rpm, kp, kd, tff)` | MIT の目標位置を度・速度を rpm で指定 |
+| `setVelocity_rpm(rpm)` | 速度モードの速度を rpm で指定 |
+| `setPositionCSP_deg(deg)` | 位置モード(CSP)の角度を度で指定 |
+| `setPositionPP_deg(deg)` | 位置モード(PP)の角度を度で指定 |
+| `setPPProfile_rpm(velRpm, accRpmS)` | PP の速度[rpm]/加速度[rpm/s] |
+| `setCSPSpeedLimit_rpm(rpm)` | CSP の速度制限を rpm で指定 |
+| `getPosition_deg(deg)` | 現在位置を度で取得 |
+| `getVelocity_rpm(rpm)` | 現在速度を rpmで取得 |
+
+換算定数も使えます: `EL05_RAD2DEG` / `EL05_DEG2RAD` / `EL05_RPS2RPM` / `EL05_RPM2RPS`
+
+参考: `度 = rad × 180/π`、`rpm = rad/s × 60/(2π)` (1 rad/s ≈ 9.55 rpm)
+
 ### 診断 (v0.1.1〜)
 
 | メソッド | 内容 |
@@ -171,6 +191,10 @@ CAN バスに 2 台を並列接続し、各モーターに異なる CAN_ID を�
 
 20. **20_MultiMotor_Sync** — 2 台を MIT モードで同期。逆位相の正弦波で往復
 21. **21_MultiMotor_Independent** — 2 台を独立制御。1台目=速度回転 / 2台目=位置往復
+
+### 単位変換 (degree / rpm)
+
+30. **30_Units_DegreeRpm** — 角度を度・速度を rpm で指定するミドル関数の使用例。速度モードと位置モードで動作
 
 ## 安全上の注意
 
