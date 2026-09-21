@@ -122,8 +122,12 @@ public:
   explicit RobStrideEduLite(uint8_t motorId, uint8_t hostId = 0xFD);
 
   // TWAI 初期化。rxPin/txPin は SN65HVD230 の RXD/CTX へ接続した GPIO。1Mbps 固定。
+  // 複数インスタンスで呼んでもバス初期化は1回だけ行われる (共有バス)。
   bool begin(int8_t rxPin = 4, int8_t txPin = 5);
   void end();
+
+  // 共有バスが初期化済みか
+  static bool busInitialized();
 
   // ---- 基本コマンド ----
   bool enable();                     // 通信タイプ3: 有効化
@@ -204,6 +208,12 @@ private:
   uint8_t _motorId;
   uint8_t _hostId;
   bool    _begun = false;
+
+  // TWAI バスは全インスタンスで共有 (ドライバは1つ)
+  static bool    s_busInit;
+  static int8_t  s_rxPin;
+  static int8_t  s_txPin;
+  static uint8_t s_instanceCount;
 
   uint32_t makeId(uint8_t type, uint16_t dataArea) const;
   bool sendFrame(uint8_t type, uint16_t dataArea, const uint8_t *payload, uint8_t len = 8);

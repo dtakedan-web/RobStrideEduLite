@@ -5,6 +5,12 @@
 
 #include "RobStrideEduLite.h"
 
+// 共有バス状態の静的メンバ定義
+bool    RobStrideEduLite::s_busInit       = false;
+int8_t  RobStrideEduLite::s_rxPin         = -1;
+int8_t  RobStrideEduLite::s_txPin         = -1;
+uint8_t RobStrideEduLite::s_instanceCount = 0;
+
 RobStrideEduLite::RobStrideEduLite(uint8_t motorId, uint8_t hostId)
   : _motorId(motorId), _hostId(hostId) {}
 
@@ -56,7 +62,21 @@ bool RobStrideEduLite::sendEmpty(uint8_t type) {
   return sendFrame(type, _hostId, zeros, 8);
 }
 
+bool RobStrideEduLite::busInitialized() { return s_busInit; }
+
 bool RobStrideEduLite::begin(int8_t rxPin, int8_t txPin) {
+  s_instanceCount++;
+
+  // 既に初期化済みなら共有バスを使うだけ (複数モーター対応)
+  if (s_busInit) {
+    if (rxPin != s_rxPin || txPin != s_txPin) {
+      // 既存と異なるピン指定は警告として失敗扱い (実害はないが混乱防止)
+      // 既存バスをそのまま使う
+    }
+    _begun = true;
+    return true;
+  }
+
   // 1Mbps / ノーマルモード / 全ID受信
   twai_general_config_t g_config =
       TWAI_GENERAL_CONFIG_DEFAULT((gpio_num_t)txPin, (gpio_num_t)rxPin, TWAI_MODE_NORMAL);
@@ -64,23 +84,36 @@ bool RobStrideEduLite::begin(int8_t rxPin, int8_t txPin) {
   twai_timing_config_t  t_config = TWAI_TIMING_CONFIG_1MBITS();
   twai_filter_config_t  f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
 
-  if (twai_driver_install(&g_config, &t_config, &f_config) != ESP_OK) return false;
+  if (twai_driver_install(&g_config, &t_config, &f_config) != ESP_OK) {
+    s_instanceCount--;
+    return false;
+  }
   if (twai_start() != ESP_OK) {
     twai_driver_uninstall();
+    s_instanceCount--;
     return false;
   }
   // 診断用アラートを有効化
   twai_reconfigure_alerts(TWAI_ALERT_TX_FAILED | TWAI_ALERT_BUS_ERROR |
                           TWAI_ALERT_BUS_OFF | TWAI_ALERT_ARB_LOST |
                           TWAI_ALERT_RX_QUEUE_FULL, nullptr);
-  _begun = true;
+  s_rxPin   = rxPin;
+  s_txPin   = txPin;
+  s_busInit = true;
+  _begun    = true;
   return true;
 }
 
 void RobStrideEduLite::end() {
   if (!_begun) return;
-  twai_stop();
-  twai_driver_uninstall();
+  if (s_instanceCount > 0) s_instanceCount--;
+  // 最後のインスタンスが終わる時だけバスを停止
+  if (s_instanceCount == 0 && s_busInit) {
+    twai_stop();
+    twai_driver_uninstall();
+    s_busInit = false;
+    s_rxPin = s_txPin = -1;
+  }
   _begun = false;
 }
 

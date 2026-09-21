@@ -48,6 +48,22 @@ void loop() {
 }
 ```
 
+### 複数台 (2 台) の場合
+
+インスタンスを分けます。CAN バスの初期化は自動で 1 回だけ行われます (v0.3.1〜)。
+
+```cpp
+RobStrideEduLite motorA(1);   // CAN_ID=1
+RobStrideEduLite motorB(2);   // CAN_ID=2
+
+void setup() {
+  motorA.begin(4, 5);   // ここでバス初期化
+  motorB.begin(4, 5);   // 共有バスを使うだけ (再初期化しない)
+  motorA.enable();
+  motorB.enable();
+}
+```
+
 ## 主要 API
 
 | メソッド | 内容 |
@@ -146,6 +162,15 @@ Kp/制限値などの制御パラメータをタイプ18で変更した場合の
 12. **12_RunMode_Velocity** — 速度モード。正転・反転を繰り返す
 13. **13_RunMode_Current** — 電流モード。Iq 電流(トルク)を正負に指令 ※回転が上がるので注意
 14. **14_RunMode_PositionCSP** — 位置モード (CSP)。速度制限付きで滑らかに2点を往復
+
+### 複数台制御 (2 台・書き込むだけで動く)
+
+CAN バスに 2 台を並列接続し、各モーターに異なる CAN_ID を設定してください
+(ID は 05_MotorSetup で変更できます)。起動時に 2 台を自動検出します。
+ライブラリは複数インスタンスで CAN バスを共有します (v0.3.1〜)。
+
+20. **20_MultiMotor_Sync** — 2 台を MIT モードで同期。逆位相の正弦波で往復
+21. **21_MultiMotor_Independent** — 2 台を独立制御。1台目=速度回転 / 2台目=位置往復
 
 ## 安全上の注意
 
