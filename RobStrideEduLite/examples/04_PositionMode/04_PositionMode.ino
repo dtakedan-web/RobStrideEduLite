@@ -12,6 +12,7 @@
  *   s       : 停止
  *   e       : 再有効化
  *   r       : 現在位置・速度を表示
+ *   d       : PP パラメータを読み出して表示 (診断用)
  *
  * 注意: モード切替は必ず停止状態で行います (このスケッチが自動で行います)
  */
@@ -43,6 +44,38 @@ void switchMode(EL05RunMode mode, const char *name) {
   motor.enable();
   running = true;
   Serial.printf("%s モードに切り替えました\n", name);
+}
+
+// PP モードのパラメータを読み出して表示 (診断用)
+void showPPParams() {
+  float velmax, acc, locref;
+  uint8_t rm[4];
+  Serial.println(F("--- PP パラメータ確認 ---"));
+  if (motor.readParam(EL05_IDX_RUN_MODE, rm)) {
+    Serial.printf("  run_mode = %u (1=PP であるべき)\n", rm[0]);
+  } else {
+    Serial.println(F("  run_mode 読み出し失敗"));
+  }
+  if (motor.readParamFloat(EL05_IDX_VEL_MAX, velmax)) {
+    Serial.printf("  vel_max  = %.3f rad/s (0 なら動かない!)\n", velmax);
+  } else {
+    Serial.println(F("  vel_max 読み出し失敗"));
+  }
+  if (motor.readParamFloat(EL05_IDX_ACC_SET, acc)) {
+    Serial.printf("  acc_set  = %.3f rad/s^2\n", acc);
+  } else {
+    Serial.println(F("  acc_set 読み出し失敗"));
+  }
+  if (motor.readParamFloat(EL05_IDX_LOC_REF, locref)) {
+    Serial.printf("  loc_ref  = %.3f rad (目標位置)\n", locref);
+  } else {
+    Serial.println(F("  loc_ref 読み出し失敗"));
+  }
+  float pos;
+  if (motor.getPosition(pos)) {
+    Serial.printf("  現在位置 = %.3f rad\n", pos);
+  }
+  Serial.println(F("-------------------------"));
 }
 
 void setup() {
@@ -83,15 +116,22 @@ void loop() {
         break;
       case 'p':
         switchMode(EL05_MODE_PP, "PP");
+        // マニュアル手順: 有効化後に vel_max → acc_set → loc_ref の順で送る
         motor.setPPProfile(5.0f, 10.0f);   // 速度5 rad/s, 加速度10 rad/s^2
+        delay(20);
         motor.setPositionPP(val);
         Serial.printf("PP 目標位置 -> %.3f rad\n",
                       RobStrideEduLite::constrainFloat(val, EL05_P_MIN, EL05_P_MAX));
+        delay(100);
+        showPPParams();   // 設定が実際に反映されたか確認
         break;
       case 'v':
         motor.setCSPSpeedLimit(val);
         Serial.printf("速度制限 -> %.2f rad/s\n",
                       RobStrideEduLite::constrainFloat(val, 0, EL05_V_MAX));
+        break;
+      case 'd':   // 診断: PP パラメータを読み出す
+        showPPParams();
         break;
       case 's':
         motor.disable();
