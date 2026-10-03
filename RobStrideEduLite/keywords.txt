@@ -26,6 +26,10 @@ setPPProfile_rpm	KEYWORD2
 setCSPSpeedLimit	KEYWORD2
 setCSPSpeedLimit_rpm	KEYWORD2
 setCurrentLimit	KEYWORD2
+moveRelativeCSP	KEYWORD2
+moveRelativeCSP_deg	KEYWORD2
+moveRelativePP	KEYWORD2
+moveRelativePP_deg	KEYWORD2
 writeParamFloat	KEYWORD2
 writeParamU8	KEYWORD2
 writeParamU16	KEYWORD2

@@ -164,6 +164,16 @@ public:
   bool setCSPSpeedLimit_rpm(float rpm);        // CSP の速度制限 [rpm]
   bool setCurrentLimit(float amp);             // 速度/位置モードの電流制限
 
+  // ---- 相対移動 (v0.3.3〜) ----
+  // 現在位置を読み取り、そこから deltaRad / deltaDeg だけ動かす。
+  // 位置モード(CSP/PP)で有効化されている状態で使うこと。
+  // 現在位置の取得に失敗した場合は false を返し、指令は送らない。
+  // ※ 移動後の位置が ±4π (±720°) を超えると範囲外に丸められるので注意。
+  bool moveRelativeCSP(float deltaRad);        // CSP: 相対移動 [rad]
+  bool moveRelativeCSP_deg(float deltaDeg);    // CSP: 相対移動 [degree]
+  bool moveRelativePP(float deltaRad);         // PP: 相対移動 [rad]
+  bool moveRelativePP_deg(float deltaDeg);     // PP: 相対移動 [degree]
+
   // ---- パラメータ読み書き (通信タイプ17/18) ----
   bool writeParamFloat(uint16_t index, float value);
   bool writeParamU8(uint16_t index, uint8_t value);

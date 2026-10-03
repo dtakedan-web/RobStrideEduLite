@@ -304,6 +304,29 @@ bool RobStrideEduLite::setCurrentLimit(float amp) {
 }
 
 // ------------------------------------------------------------------
+// 相対移動: 現在位置を読み取り、delta を加えて目標位置として送る
+// ------------------------------------------------------------------
+bool RobStrideEduLite::moveRelativeCSP(float deltaRad) {
+  float cur;
+  if (!getPosition(cur)) return false;   // 現在位置が取れなければ指令しない
+  return setPositionCSP(cur + deltaRad);
+}
+
+bool RobStrideEduLite::moveRelativeCSP_deg(float deltaDeg) {
+  return moveRelativeCSP(deltaDeg * EL05_DEG2RAD);
+}
+
+bool RobStrideEduLite::moveRelativePP(float deltaRad) {
+  float cur;
+  if (!getPosition(cur)) return false;
+  return setPositionPP(cur + deltaRad);
+}
+
+bool RobStrideEduLite::moveRelativePP_deg(float deltaDeg) {
+  return moveRelativePP(deltaDeg * EL05_DEG2RAD);
+}
+
+// ------------------------------------------------------------------
 // 能動レポート: 通信タイプ24 (F_CMD: 00=無効, 01=有効 既定10ms周期)
 // ------------------------------------------------------------------
 bool RobStrideEduLite::setActiveReport(bool on) {
