@@ -215,6 +215,8 @@ CAN バスに 2 台を並列接続し、各モーターに異なる CAN_ID を�
 
 40. **40_Bilateral_PositionSync** — 位置対位置型。マスターを手で回すとスレーブが同じ角度に追従 (双方向)
 41. **41_Bilateral_ForceReflect** — 力反射型。位置同期に加え、スレーブが受けた力がマスターの手に伝わる
+42. **42_Bilateral_PositionSync_Tune** — 位置同期のシリアル調整版。kp/kd/周期を対話的に変更可能
+43. **43_Bilateral_ForceReflect_Tune** — 力反射のシリアル調整版。kp/kd/力反射ゲイン/周期を対話的に変更可能
 
 ### 単位変換 (degree / rpm)
 
